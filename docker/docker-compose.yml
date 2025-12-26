@@ -1,0 +1,144 @@
+services:
+  # FastAPI Application
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: collab-api
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/collab_workspace
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DATABASE=collab_workspace
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=super-secret-key-change-in-production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:8080"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+  # Celery Worker
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: collab-worker
+    environment:
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/collab_workspace
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DATABASE=collab_workspace
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=super-secret-key-change-in-production
+    depends_on:
+      - redis
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+  # Celery Beat (Scheduler) - Optional
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: collab-beat
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: collab-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: collab_workspace
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: collab-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+  # Redis Cache & Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: collab-redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+  # Celery Flower (Monitoring) - Optional
+  flower:
+    image: mher/flower:latest
+    container_name: collab-flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - FLOWER_PORT=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - worker
+    restart: unless-stopped
+    networks:
+      - collab-network
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+
+
+networks:
+  collab-network:
+    driver: bridge
