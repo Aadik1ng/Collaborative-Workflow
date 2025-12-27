@@ -16,8 +16,12 @@ async def init_mongodb() -> None:
     mongodb_client = AsyncIOMotorClient(settings.MONGODB_URL)
     mongodb_database = mongodb_client[settings.MONGODB_DATABASE]
 
-    # Create indexes
-    await _create_indexes()
+    # Try to create indexes, but don't fail startup if it errors
+    try:
+        await _create_indexes()
+    except Exception as e:
+        import logging
+        logging.warning(f"Could not create MongoDB indexes (non-fatal): {e}")
 
 
 async def _create_indexes() -> None:
