@@ -3,17 +3,18 @@ Script to generate assessment documents (Word and PDF).
 Requires: pip install python-docx reportlab
 """
 
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.style import WD_STYLE_TYPE
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
-from reportlab.lib import colors
-from datetime import datetime
 import os
+from datetime import datetime
+
+from docx import Document
+from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt, RGBColor
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
 
 # ============================================================================
 # CONFIGURATION - UPDATE THESE WITH YOUR DETAILS
@@ -53,7 +54,6 @@ This project is a Real-Time Collaborative Workspace Backend - a production-ready
 - Rate limiting and API caching
 - Feature flags for runtime configuration
 """,
-
     "architecture": """
 The system follows a microservices-inspired architecture with clear separation of concerns:
 
@@ -84,7 +84,6 @@ The system follows a microservices-inspired architecture with clear separation o
 - passlib + argon2-cffi for password hashing
 - PyJWT for token management
 """,
-
     "setup_instructions": """
 **Prerequisites:**
 - Python 3.11+
@@ -141,7 +140,6 @@ docker-compose up -d
 - ACCESS_TOKEN_EXPIRE_MINUTES: Token lifetime
 - REFRESH_TOKEN_EXPIRE_DAYS: Refresh token lifetime
 """,
-
     "design_decisions": """
 **1. Dual Database Strategy (PostgreSQL + MongoDB)**
 - Rationale: Relational data (users, projects, roles) benefits from ACID transactions. Non-relational data (job results, logs) needs flexible schemas and high write throughput.
@@ -167,7 +165,6 @@ docker-compose up -d
 - Rationale: Bypasses passlib's backend detection issues in serverless environments.
 - Trade-off: Less abstraction.
 """,
-
     "scalability": """
 **Horizontal Scaling:**
 - FastAPI: Deploy multiple instances behind load balancer (stateless design)
@@ -198,7 +195,6 @@ docker-compose up -d
 - OpenTelemetry for distributed tracing
 - Kubernetes deployment with Helm charts
 """,
-
     "testing": """
 **Running Tests:**
 
@@ -228,7 +224,6 @@ pytest -v
 - Unit Tests: Password hashing, JWT tokens, permissions
 - Integration Tests: Full API request/response cycles with mocked databases
 """,
-
     "deployment": """
 **Vercel Deployment:**
 
@@ -266,142 +261,214 @@ docker-compose up -d --build
 
 API_ENDPOINTS = [
     # Auth
-    {"method": "POST", "route": "/api/v1/auth/register", "description": "Register new user",
-     "request": '{"email": "user@example.com", "username": "user", "password": "SecurePass123!", "full_name": "John Doe"}',
-     "response": '{"id": "uuid", "email": "...", "username": "...", "full_name": "..."}',
-     "status": "201 Created"},
-    {"method": "POST", "route": "/api/v1/auth/login", "description": "Login and get tokens",
-     "request": '{"email": "user@example.com", "password": "SecurePass123!"}',
-     "response": '{"access_token": "...", "refresh_token": "...", "token_type": "bearer"}',
-     "status": "200 OK"},
-    {"method": "POST", "route": "/api/v1/auth/refresh", "description": "Refresh access token",
-     "request": '{"refresh_token": "..."}',
-     "response": '{"access_token": "...", "token_type": "bearer"}',
-     "status": "200 OK"},
-    {"method": "POST", "route": "/api/v1/auth/logout", "description": "Logout user",
-     "request": "Header: Authorization: Bearer <token>",
-     "response": '{"message": "Logged out successfully"}',
-     "status": "200 OK"},
-    {"method": "GET", "route": "/api/v1/auth/me", "description": "Get current user",
-     "request": "Header: Authorization: Bearer <token>",
-     "response": '{"id": "...", "email": "...", "username": "...", "full_name": "..."}',
-     "status": "200 OK"},
-    {"method": "PUT", "route": "/api/v1/auth/me", "description": "Update profile",
-     "request": '{"full_name": "New Name"}',
-     "response": '{"id": "...", "email": "...", "full_name": "New Name"}',
-     "status": "200 OK"},
-    
+    {
+        "method": "POST",
+        "route": "/api/v1/auth/register",
+        "description": "Register new user",
+        "request": '{"email": "user@example.com", "username": "user", "password": "SecurePass123!", "full_name": "John Doe"}',
+        "response": '{"id": "uuid", "email": "...", "username": "...", "full_name": "..."}',
+        "status": "201 Created",
+    },
+    {
+        "method": "POST",
+        "route": "/api/v1/auth/login",
+        "description": "Login and get tokens",
+        "request": '{"email": "user@example.com", "password": "SecurePass123!"}',
+        "response": '{"access_token": "...", "refresh_token": "...", "token_type": "bearer"}',
+        "status": "200 OK",
+    },
+    {
+        "method": "POST",
+        "route": "/api/v1/auth/refresh",
+        "description": "Refresh access token",
+        "request": '{"refresh_token": "..."}',
+        "response": '{"access_token": "...", "token_type": "bearer"}',
+        "status": "200 OK",
+    },
+    {
+        "method": "POST",
+        "route": "/api/v1/auth/logout",
+        "description": "Logout user",
+        "request": "Header: Authorization: Bearer <token>",
+        "response": '{"message": "Logged out successfully"}',
+        "status": "200 OK",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/auth/me",
+        "description": "Get current user",
+        "request": "Header: Authorization: Bearer <token>",
+        "response": '{"id": "...", "email": "...", "username": "...", "full_name": "..."}',
+        "status": "200 OK",
+    },
+    {
+        "method": "PUT",
+        "route": "/api/v1/auth/me",
+        "description": "Update profile",
+        "request": '{"full_name": "New Name"}',
+        "response": '{"id": "...", "email": "...", "full_name": "New Name"}',
+        "status": "200 OK",
+    },
     # Projects
-    {"method": "POST", "route": "/api/v1/projects", "description": "Create project",
-     "request": '{"name": "My Project", "description": "...", "is_public": false}',
-     "response": '{"id": "uuid", "name": "...", "owner_id": "...", "created_at": "..."}',
-     "status": "201 Created"},
-    {"method": "GET", "route": "/api/v1/projects", "description": "List projects",
-     "request": "Query: ?skip=0&limit=10",
-     "response": '[{"id": "...", "name": "...", ...}]',
-     "status": "200 OK"},
-    {"method": "GET", "route": "/api/v1/projects/{id}", "description": "Get project",
-     "request": "Path: project ID",
-     "response": '{"id": "...", "name": "...", "owner": {...}, "workspaces": [...]}',
-     "status": "200 OK"},
-    {"method": "PUT", "route": "/api/v1/projects/{id}", "description": "Update project",
-     "request": '{"name": "Updated Name"}',
-     "response": '{"id": "...", "name": "Updated Name", ...}',
-     "status": "200 OK"},
-    {"method": "DELETE", "route": "/api/v1/projects/{id}", "description": "Delete project",
-     "request": "Path: project ID",
-     "response": '{"message": "Project deleted"}',
-     "status": "200 OK"},
-    
+    {
+        "method": "POST",
+        "route": "/api/v1/projects",
+        "description": "Create project",
+        "request": '{"name": "My Project", "description": "...", "is_public": false}',
+        "response": '{"id": "uuid", "name": "...", "owner_id": "...", "created_at": "..."}',
+        "status": "201 Created",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/projects",
+        "description": "List projects",
+        "request": "Query: ?skip=0&limit=10",
+        "response": '[{"id": "...", "name": "...", ...}]',
+        "status": "200 OK",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/projects/{id}",
+        "description": "Get project",
+        "request": "Path: project ID",
+        "response": '{"id": "...", "name": "...", "owner": {...}, "workspaces": [...]}',
+        "status": "200 OK",
+    },
+    {
+        "method": "PUT",
+        "route": "/api/v1/projects/{id}",
+        "description": "Update project",
+        "request": '{"name": "Updated Name"}',
+        "response": '{"id": "...", "name": "Updated Name", ...}',
+        "status": "200 OK",
+    },
+    {
+        "method": "DELETE",
+        "route": "/api/v1/projects/{id}",
+        "description": "Delete project",
+        "request": "Path: project ID",
+        "response": '{"message": "Project deleted"}',
+        "status": "200 OK",
+    },
     # Workspaces
-    {"method": "POST", "route": "/api/v1/projects/{id}/workspaces", "description": "Create workspace",
-     "request": '{"name": "Workspace 1", "description": "..."}',
-     "response": '{"id": "uuid", "name": "...", "project_id": "..."}',
-     "status": "201 Created"},
-    {"method": "GET", "route": "/api/v1/projects/{id}/workspaces", "description": "List workspaces",
-     "request": "Path: project ID",
-     "response": '[{"id": "...", "name": "...", ...}]',
-     "status": "200 OK"},
-    
+    {
+        "method": "POST",
+        "route": "/api/v1/projects/{id}/workspaces",
+        "description": "Create workspace",
+        "request": '{"name": "Workspace 1", "description": "..."}',
+        "response": '{"id": "uuid", "name": "...", "project_id": "..."}',
+        "status": "201 Created",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/projects/{id}/workspaces",
+        "description": "List workspaces",
+        "request": "Path: project ID",
+        "response": '[{"id": "...", "name": "...", ...}]',
+        "status": "200 OK",
+    },
     # Collaborators
-    {"method": "POST", "route": "/api/v1/projects/{id}/collaborators", "description": "Invite collaborator",
-     "request": '{"email": "collab@example.com", "role": "collaborator"}',
-     "response": '{"id": "...", "user_id": "...", "role": "collaborator"}',
-     "status": "201 Created"},
-    {"method": "GET", "route": "/api/v1/projects/{id}/collaborators", "description": "List collaborators",
-     "request": "Path: project ID",
-     "response": '[{"user_id": "...", "email": "...", "role": "..."}]',
-     "status": "200 OK"},
-    
+    {
+        "method": "POST",
+        "route": "/api/v1/projects/{id}/collaborators",
+        "description": "Invite collaborator",
+        "request": '{"email": "collab@example.com", "role": "collaborator"}',
+        "response": '{"id": "...", "user_id": "...", "role": "collaborator"}',
+        "status": "201 Created",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/projects/{id}/collaborators",
+        "description": "List collaborators",
+        "request": "Path: project ID",
+        "response": '[{"user_id": "...", "email": "...", "role": "..."}]',
+        "status": "200 OK",
+    },
     # Jobs
-    {"method": "POST", "route": "/api/v1/jobs", "description": "Submit code execution job",
-     "request": '{"language": "python", "code": "print(\'Hello\')", "timeout": 30}',
-     "response": '{"id": "uuid", "status": "pending", "created_at": "..."}',
-     "status": "202 Accepted"},
-    {"method": "GET", "route": "/api/v1/jobs/{id}", "description": "Get job status",
-     "request": "Path: job ID",
-     "response": '{"id": "...", "status": "completed", "output": "Hello", "execution_time": 0.5}',
-     "status": "200 OK"},
-    {"method": "GET", "route": "/api/v1/jobs", "description": "List user jobs",
-     "request": "Query: ?skip=0&limit=10",
-     "response": '[{"id": "...", "status": "...", ...}]',
-     "status": "200 OK"},
-    {"method": "POST", "route": "/api/v1/jobs/{id}/cancel", "description": "Cancel job",
-     "request": "Path: job ID",
-     "response": '{"message": "Job cancelled"}',
-     "status": "200 OK"},
+    {
+        "method": "POST",
+        "route": "/api/v1/jobs",
+        "description": "Submit code execution job",
+        "request": '{"language": "python", "code": "print(\'Hello\')", "timeout": 30}',
+        "response": '{"id": "uuid", "status": "pending", "created_at": "..."}',
+        "status": "202 Accepted",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/jobs/{id}",
+        "description": "Get job status",
+        "request": "Path: job ID",
+        "response": '{"id": "...", "status": "completed", "output": "Hello", "execution_time": 0.5}',
+        "status": "200 OK",
+    },
+    {
+        "method": "GET",
+        "route": "/api/v1/jobs",
+        "description": "List user jobs",
+        "request": "Query: ?skip=0&limit=10",
+        "response": '[{"id": "...", "status": "...", ...}]',
+        "status": "200 OK",
+    },
+    {
+        "method": "POST",
+        "route": "/api/v1/jobs/{id}/cancel",
+        "description": "Cancel job",
+        "request": "Path: job ID",
+        "response": '{"message": "Job cancelled"}',
+        "status": "200 OK",
+    },
 ]
 
 
 def create_word_document(output_path: str):
     """Create the Word document."""
     doc = Document()
-    
+
     # Set up styles
     styles = doc.styles
-    
+
     # Title style
-    title_style = styles.add_style('CustomTitle', WD_STYLE_TYPE.PARAGRAPH)
+    title_style = styles.add_style("CustomTitle", WD_STYLE_TYPE.PARAGRAPH)
     title_style.font.size = Pt(28)
     title_style.font.bold = True
     title_style.font.color.rgb = RGBColor(0, 51, 102)
-    
+
     # Heading 1 style modification
-    h1 = styles['Heading 1']
+    h1 = styles["Heading 1"]
     h1.font.size = Pt(18)
     h1.font.color.rgb = RGBColor(0, 51, 102)
-    
+
     # Heading 2 style modification
-    h2 = styles['Heading 2']
+    h2 = styles["Heading 2"]
     h2.font.size = Pt(14)
     h2.font.color.rgb = RGBColor(0, 102, 153)
-    
+
     # =========================================================================
     # COVER PAGE
     # =========================================================================
     doc.add_paragraph()
     doc.add_paragraph()
     doc.add_paragraph()
-    
+
     title = doc.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = title.add_run("Real-Time Collaborative Workspace Backend")
     run.font.size = Pt(28)
     run.font.bold = True
     run.font.color.rgb = RGBColor(0, 51, 102)
-    
+
     doc.add_paragraph()
-    
+
     subtitle = doc.add_paragraph()
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = subtitle.add_run("Backend Developer Assessment")
     run.font.size = Pt(18)
     run.font.color.rgb = RGBColor(102, 102, 102)
-    
+
     doc.add_paragraph()
     doc.add_paragraph()
     doc.add_paragraph()
-    
+
     # Candidate info
     info_para = doc.add_paragraph()
     info_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -409,9 +476,9 @@ def create_word_document(output_path: str):
     info_para.add_run(f"Email: {CONFIG['email']}\n")
     info_para.add_run(f"Phone: {CONFIG['phone']}\n")
     info_para.add_run(f"Date: {CONFIG['date']}")
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # TABLE OF CONTENTS (Manual)
     # =========================================================================
@@ -429,9 +496,9 @@ def create_word_document(output_path: str):
     ]
     for item in toc_items:
         doc.add_paragraph(item)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 1: PROJECT OVERVIEW
     # =========================================================================
@@ -441,12 +508,12 @@ def create_word_document(output_path: str):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 2: ARCHITECTURE
     # =========================================================================
@@ -456,14 +523,14 @@ def create_word_document(output_path: str):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         elif line.strip().startswith(str(tuple(range(10)))):
             doc.add_paragraph(line.strip())
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 3: SETUP INSTRUCTIONS
     # =========================================================================
@@ -476,30 +543,35 @@ def create_word_document(output_path: str):
         if in_code_block:
             p = doc.add_paragraph()
             run = p.add_run(line)
-            run.font.name = 'Courier New'
+            run.font.name = "Courier New"
             run.font.size = Pt(9)
         elif line.startswith("**") and line.endswith("**"):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 4: API DOCUMENTATION
     # =========================================================================
     doc.add_heading("4. API Documentation", level=1)
-    
+
     current_category = None
     for endpoint in API_ENDPOINTS:
         route = endpoint["route"]
         if "/auth/" in route and current_category != "Authentication":
             current_category = "Authentication"
             doc.add_heading("Authentication Endpoints", level=2)
-        elif "/projects" in route and "/workspaces" not in route and "/collaborators" not in route and current_category != "Projects":
+        elif (
+            "/projects" in route
+            and "/workspaces" not in route
+            and "/collaborators" not in route
+            and current_category != "Projects"
+        ):
             current_category = "Projects"
             doc.add_heading("Project Endpoints", level=2)
         elif "/workspaces" in route and current_category != "Workspaces":
@@ -511,34 +583,34 @@ def create_word_document(output_path: str):
         elif "/jobs" in route and current_category != "Jobs":
             current_category = "Jobs"
             doc.add_heading("Job Endpoints", level=2)
-        
+
         # Endpoint header
         p = doc.add_paragraph()
         run = p.add_run(f"{endpoint['method']} {endpoint['route']}")
         run.font.bold = True
         run.font.size = Pt(11)
-        
+
         doc.add_paragraph(f"Description: {endpoint['description']}")
-        
+
         # Request
         p = doc.add_paragraph()
         p.add_run("Request: ").bold = True
-        req_run = p.add_run(endpoint['request'])
-        req_run.font.name = 'Courier New'
+        req_run = p.add_run(endpoint["request"])
+        req_run.font.name = "Courier New"
         req_run.font.size = Pt(9)
-        
+
         # Response
         p = doc.add_paragraph()
         p.add_run("Response: ").bold = True
-        res_run = p.add_run(endpoint['response'])
-        res_run.font.name = 'Courier New'
+        res_run = p.add_run(endpoint["response"])
+        res_run.font.name = "Courier New"
         res_run.font.size = Pt(9)
-        
+
         doc.add_paragraph(f"Status: {endpoint['status']}")
         doc.add_paragraph()  # Spacer
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 5: DESIGN DECISIONS
     # =========================================================================
@@ -548,12 +620,12 @@ def create_word_document(output_path: str):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 6: SCALABILITY
     # =========================================================================
@@ -563,12 +635,12 @@ def create_word_document(output_path: str):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 7: TESTING
     # =========================================================================
@@ -581,18 +653,18 @@ def create_word_document(output_path: str):
         if in_code_block:
             p = doc.add_paragraph()
             run = p.add_run(line)
-            run.font.name = 'Courier New'
+            run.font.name = "Courier New"
             run.font.size = Pt(9)
         elif line.startswith("**") and line.endswith("**"):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 8: DEPLOYMENT
     # =========================================================================
@@ -605,38 +677,38 @@ def create_word_document(output_path: str):
         if in_code_block:
             p = doc.add_paragraph()
             run = p.add_run(line)
-            run.font.name = 'Courier New'
+            run.font.name = "Courier New"
             run.font.size = Pt(9)
         elif line.startswith("**") and line.endswith("**"):
             p = doc.add_paragraph()
             p.add_run(line.strip("*")).bold = True
         elif line.startswith("- "):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            doc.add_paragraph(line[2:], style="List Bullet")
         else:
             doc.add_paragraph(line)
-    
+
     doc.add_page_break()
-    
+
     # =========================================================================
     # SECTION 9: LINKS SUMMARY
     # =========================================================================
     doc.add_heading("9. Links Summary", level=1)
-    
+
     doc.add_paragraph()
     p = doc.add_paragraph()
     p.add_run("GitHub Repository: ").bold = True
-    p.add_run(CONFIG['github_url'])
-    
+    p.add_run(CONFIG["github_url"])
+
     doc.add_paragraph()
     p = doc.add_paragraph()
     p.add_run("Live Vercel Deployment: ").bold = True
-    p.add_run(CONFIG['vercel_url'])
-    
+    p.add_run(CONFIG["vercel_url"])
+
     doc.add_paragraph()
     p = doc.add_paragraph()
     p.add_run("Walkthrough Video: ").bold = True
-    p.add_run(CONFIG['video_url'])
-    
+    p.add_run(CONFIG["video_url"])
+
     # Save the document
     doc.save(output_path)
     print(f"✅ Word document created: {output_path}")
@@ -647,84 +719,90 @@ def create_pdf_document(output_path: str):
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        rightMargin=0.75*inch,
-        leftMargin=0.75*inch,
-        topMargin=0.75*inch,
-        bottomMargin=0.75*inch
+        rightMargin=0.75 * inch,
+        leftMargin=0.75 * inch,
+        topMargin=0.75 * inch,
+        bottomMargin=0.75 * inch,
     )
-    
+
     # Styles
     styles = getSampleStyleSheet()
-    
+
     title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Title'],
+        "CustomTitle",
+        parent=styles["Title"],
         fontSize=24,
-        textColor=colors.HexColor('#003366'),
+        textColor=colors.HexColor("#003366"),
         spaceAfter=20,
-        alignment=1  # Center
+        alignment=1,  # Center
     )
-    
+
     h1_style = ParagraphStyle(
-        'CustomH1',
-        parent=styles['Heading1'],
+        "CustomH1",
+        parent=styles["Heading1"],
         fontSize=16,
-        textColor=colors.HexColor('#003366'),
+        textColor=colors.HexColor("#003366"),
         spaceBefore=20,
-        spaceAfter=10
+        spaceAfter=10,
     )
-    
+
     h2_style = ParagraphStyle(
-        'CustomH2',
-        parent=styles['Heading2'],
+        "CustomH2",
+        parent=styles["Heading2"],
         fontSize=13,
-        textColor=colors.HexColor('#006699'),
+        textColor=colors.HexColor("#006699"),
         spaceBefore=15,
-        spaceAfter=8
+        spaceAfter=8,
     )
-    
+
     body_style = ParagraphStyle(
-        'CustomBody',
-        parent=styles['Normal'],
-        fontSize=10,
-        spaceAfter=6,
-        leading=14
+        "CustomBody", parent=styles["Normal"], fontSize=10, spaceAfter=6, leading=14
     )
-    
+
     code_style = ParagraphStyle(
-        'CustomCode',
-        parent=styles['Code'],
+        "CustomCode",
+        parent=styles["Code"],
         fontSize=9,
-        fontName='Courier',
-        backColor=colors.HexColor('#f5f5f5'),
+        fontName="Courier",
+        backColor=colors.HexColor("#f5f5f5"),
         leftIndent=10,
-        spaceAfter=4
+        spaceAfter=4,
     )
-    
+
     story = []
-    
+
     # =========================================================================
     # COVER PAGE
     # =========================================================================
-    story.append(Spacer(1, 2*inch))
+    story.append(Spacer(1, 2 * inch))
     story.append(Paragraph("Real-Time Collaborative Workspace Backend", title_style))
-    story.append(Spacer(1, 0.3*inch))
-    story.append(Paragraph("Backend Developer Assessment", ParagraphStyle(
-        'Subtitle', parent=styles['Normal'], fontSize=14, textColor=colors.gray, alignment=1
-    )))
-    story.append(Spacer(1, 1*inch))
-    
+    story.append(Spacer(1, 0.3 * inch))
+    story.append(
+        Paragraph(
+            "Backend Developer Assessment",
+            ParagraphStyle(
+                "Subtitle", parent=styles["Normal"], fontSize=14, textColor=colors.gray, alignment=1
+            ),
+        )
+    )
+    story.append(Spacer(1, 1 * inch))
+
     cover_info = f"""
-    <b>Name:</b> {CONFIG['name']}<br/>
-    <b>Email:</b> {CONFIG['email']}<br/>
-    <b>Phone:</b> {CONFIG['phone']}<br/>
-    <b>Date:</b> {CONFIG['date']}
+    <b>Name:</b> {CONFIG["name"]}<br/>
+    <b>Email:</b> {CONFIG["email"]}<br/>
+    <b>Phone:</b> {CONFIG["phone"]}<br/>
+    <b>Date:</b> {CONFIG["date"]}
     """
-    story.append(Paragraph(cover_info, ParagraphStyle(
-        'CoverInfo', parent=styles['Normal'], fontSize=12, alignment=1, leading=18
-    )))
+    story.append(
+        Paragraph(
+            cover_info,
+            ParagraphStyle(
+                "CoverInfo", parent=styles["Normal"], fontSize=12, alignment=1, leading=18
+            ),
+        )
+    )
     story.append(PageBreak())
-    
+
     # =========================================================================
     # TABLE OF CONTENTS
     # =========================================================================
@@ -743,11 +821,11 @@ def create_pdf_document(output_path: str):
     for item in toc_items:
         story.append(Paragraph(item, body_style))
     story.append(PageBreak())
-    
+
     # =========================================================================
     # SECTIONS
     # =========================================================================
-    
+
     def add_section(title, content):
         story.append(Paragraph(title, h1_style))
         in_code_block = False
@@ -765,21 +843,26 @@ def create_pdf_document(output_path: str):
             elif line.strip():
                 story.append(Paragraph(line, body_style))
         story.append(PageBreak())
-    
+
     add_section("1. Project Overview", SECTIONS["project_overview"])
     add_section("2. Architecture Overview", SECTIONS["architecture"])
     add_section("3. Setup & Run Instructions", SECTIONS["setup_instructions"])
-    
+
     # API Documentation (special handling)
     story.append(Paragraph("4. API Documentation", h1_style))
-    
+
     current_category = None
     for endpoint in API_ENDPOINTS:
         route = endpoint["route"]
         if "/auth/" in route and current_category != "Auth":
             current_category = "Auth"
             story.append(Paragraph("Authentication Endpoints", h2_style))
-        elif "/projects" in route and "/workspaces" not in route and "/collaborators" not in route and current_category != "Projects":
+        elif (
+            "/projects" in route
+            and "/workspaces" not in route
+            and "/collaborators" not in route
+            and current_category != "Projects"
+        ):
             current_category = "Projects"
             story.append(Paragraph("Project Endpoints", h2_style))
         elif "/workspaces" in route and current_category != "Workspaces":
@@ -791,32 +874,32 @@ def create_pdf_document(output_path: str):
         elif "/jobs" in route and current_category != "Jobs":
             current_category = "Jobs"
             story.append(Paragraph("Job Endpoints", h2_style))
-        
+
         story.append(Paragraph(f"<b>{endpoint['method']} {endpoint['route']}</b>", body_style))
         story.append(Paragraph(f"Description: {endpoint['description']}", body_style))
-        req = endpoint['request'].replace("<", "&lt;").replace(">", "&gt;")
-        res = endpoint['response'].replace("<", "&lt;").replace(">", "&gt;")
+        req = endpoint["request"].replace("<", "&lt;").replace(">", "&gt;")
+        res = endpoint["response"].replace("<", "&lt;").replace(">", "&gt;")
         story.append(Paragraph(f"Request: <font face='Courier' size='9'>{req}</font>", body_style))
         story.append(Paragraph(f"Response: <font face='Courier' size='9'>{res}</font>", body_style))
         story.append(Paragraph(f"Status: {endpoint['status']}", body_style))
-        story.append(Spacer(1, 0.1*inch))
-    
+        story.append(Spacer(1, 0.1 * inch))
+
     story.append(PageBreak())
-    
+
     add_section("5. Design Decisions & Trade-offs", SECTIONS["design_decisions"])
     add_section("6. Scalability Considerations", SECTIONS["scalability"])
     add_section("7. Testing Instructions", SECTIONS["testing"])
     add_section("8. Deployment Instructions", SECTIONS["deployment"])
-    
+
     # Links Summary
     story.append(Paragraph("9. Links Summary", h1_style))
-    story.append(Spacer(1, 0.2*inch))
+    story.append(Spacer(1, 0.2 * inch))
     story.append(Paragraph(f"<b>GitHub Repository:</b> {CONFIG['github_url']}", body_style))
-    story.append(Spacer(1, 0.1*inch))
+    story.append(Spacer(1, 0.1 * inch))
     story.append(Paragraph(f"<b>Live Vercel Deployment:</b> {CONFIG['vercel_url']}", body_style))
-    story.append(Spacer(1, 0.1*inch))
+    story.append(Spacer(1, 0.1 * inch))
     story.append(Paragraph(f"<b>Walkthrough Video:</b> {CONFIG['video_url']}", body_style))
-    
+
     # Build PDF
     doc.build(story)
     print(f"✅ PDF document created: {output_path}")
@@ -826,18 +909,18 @@ def main():
     """Generate both documents."""
     # Output directory
     output_dir = os.path.dirname(os.path.abspath(__file__))
-    
+
     # Generate Word document
     docx_path = os.path.join(output_dir, "Backend_Assessment_Submission.docx")
     create_word_document(docx_path)
-    
+
     # Generate PDF document
     pdf_path = os.path.join(output_dir, "Backend_Assessment_Submission.pdf")
     create_pdf_document(pdf_path)
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("📄 Documents generated successfully!")
-    print("="*60)
+    print("=" * 60)
     print(f"\n📝 Word: {docx_path}")
     print(f"📕 PDF:  {pdf_path}")
     print("\n⚠️  Remember to update the CONFIG section at the top of this")
