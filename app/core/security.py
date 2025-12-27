@@ -5,6 +5,10 @@ from typing import Any, Optional
 from uuid import UUID
 
 import jwt
+try:
+    import argon2
+except ImportError:
+    pass
 from passlib.context import CryptContext
 
 from app.config import settings
