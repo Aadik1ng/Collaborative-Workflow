@@ -1,6 +1,5 @@
 """Pytest fixtures and configuration."""
 
-import asyncio
 from collections.abc import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
