@@ -94,8 +94,9 @@ jobs:
           pip install aiosqlite  # For SQLite async testing
 
       - name: Run tests with coverage
+        timeout-minutes: 5
         run: |
-          pytest --cov=app --cov-report=xml --cov-report=term-missing -v
+          pytest --cov=app --cov-report=xml --cov-report=term-missing -v --timeout=60
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
