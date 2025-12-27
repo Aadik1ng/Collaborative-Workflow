@@ -64,19 +64,15 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 2. Install dependencies
 pip install -r requirements.txt
-pip install -r requirements-dev.txt
 
 # 3. Configure environment
 cp .env.example .env
 # Edit .env with your database credentials
 
-# 4. Run database migrations
-alembic upgrade head
-
-# 5. Start the API server (Terminal 1)
+# 4. Start the API server (Terminal 1)
 uvicorn app.main:app --reload
 
-# 6. Start the Celery worker (Terminal 2)
+# 5. Start the Celery worker (Terminal 2)
 celery -A app.workers.celery_app worker --loglevel=info
 ```
 
@@ -87,10 +83,20 @@ cd docker
 docker-compose up -d
 ```
 
+This starts:
+
+- FastAPI API on port 8000
+- Celery Worker
+- PostgreSQL on port 5432
+- MongoDB on port 27017
+- Redis on port 6379
+- Flower (Celery monitoring) on port 5555
+
 ### Accessing the API
 
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/api/v1/health
 
 ---
 
@@ -121,6 +127,11 @@ docker-compose up -d
 - **Why**: Enables broadcasting of user cursors and document changes across multiple API instances.
 - **Trade-off**: Redis becomes a central point of coordination; must be highly available.
 
+### 6. Table Name Prefixing (`cw_`)
+
+- **Why**: Allows this application to coexist with other applications using the same database by avoiding table name collisions (e.g., `cw_users` instead of `users`).
+- **Trade-off**: Slightly longer table names in raw SQL queries.
+
 ---
 
 ## 📈 Scalability Considerations
@@ -150,17 +161,178 @@ docker-compose up -d
 
 ---
 
+## 📚 API Documentation
+
+### Authentication Endpoints
+
+| Method | Endpoint                | Description                  |
+| :----- | :---------------------- | :--------------------------- |
+| POST   | `/api/v1/auth/register` | Register a new user          |
+| POST   | `/api/v1/auth/login`    | Login and get access token   |
+| POST   | `/api/v1/auth/refresh`  | Refresh access token         |
+| POST   | `/api/v1/auth/logout`   | Logout and invalidate tokens |
+| GET    | `/api/v1/auth/me`       | Get current user profile     |
+| PUT    | `/api/v1/auth/me`       | Update current user profile  |
+| PUT    | `/api/v1/auth/password` | Change password              |
+
+### Project Endpoints
+
+| Method | Endpoint                | Description          |
+| :----- | :---------------------- | :------------------- |
+| POST   | `/api/v1/projects`      | Create a new project |
+| GET    | `/api/v1/projects`      | List user's projects |
+| GET    | `/api/v1/projects/{id}` | Get project details  |
+| PUT    | `/api/v1/projects/{id}` | Update project       |
+| DELETE | `/api/v1/projects/{id}` | Delete project       |
+
+### Workspace Endpoints
+
+| Method | Endpoint                           | Description             |
+| :----- | :--------------------------------- | :---------------------- |
+| POST   | `/api/v1/projects/{id}/workspaces` | Create a workspace      |
+| GET    | `/api/v1/projects/{id}/workspaces` | List project workspaces |
+| GET    | `/api/v1/workspaces/{id}`          | Get workspace details   |
+| PUT    | `/api/v1/workspaces/{id}`          | Update workspace        |
+| DELETE | `/api/v1/workspaces/{id}`          | Delete workspace        |
+
+### Collaborator Endpoints
+
+| Method | Endpoint                                        | Description                |
+| :----- | :---------------------------------------------- | :------------------------- |
+| POST   | `/api/v1/projects/{id}/collaborators`           | Invite a collaborator      |
+| GET    | `/api/v1/projects/{id}/collaborators`           | List project collaborators |
+| PUT    | `/api/v1/projects/{id}/collaborators/{user_id}` | Update collaborator role   |
+| DELETE | `/api/v1/projects/{id}/collaborators/{user_id}` | Remove collaborator        |
+
+### Job Endpoints
+
+| Method | Endpoint                   | Description                 |
+| :----- | :------------------------- | :-------------------------- |
+| POST   | `/api/v1/jobs`             | Submit a code execution job |
+| GET    | `/api/v1/jobs`             | List user's jobs            |
+| GET    | `/api/v1/jobs/{id}`        | Get job status and result   |
+| POST   | `/api/v1/jobs/{id}/cancel` | Cancel a running job        |
+
+### Other Endpoints
+
+| Method | Endpoint              | Description              |
+| :----- | :-------------------- | :----------------------- |
+| GET    | `/api/v1/health`      | Health check             |
+| GET    | `/metrics`            | Prometheus-style metrics |
+| GET    | `/api/v1/flags/{key}` | Get feature flag value   |
+| POST   | `/api/v1/flags/{key}` | Set feature flag value   |
+
+### WebSocket Endpoints
+
+| Endpoint                         | Description                             |
+| :------------------------------- | :-------------------------------------- |
+| `/ws/{workspace_id}?token={jwt}` | Connect to workspace for real-time sync |
+
+---
+
 ## 🧪 Testing
 
+### Running Tests
+
 ```bash
-# Run all integration tests
+# Run all tests
+pytest
+
+# Run integration tests only
 pytest tests/integration
+
+# Run unit tests only
+pytest tests/unit
 
 # Run with coverage report
 pytest --cov=app --cov-report=term-missing
 
-# Current Status: 36 tests passing
+# Run with verbose output
+pytest -v
 ```
+
+### Test Coverage
+
+- **58 tests** covering authentication, projects, workspaces, collaborators, jobs, and WebSocket endpoints.
+- **~59% code coverage** with focus on critical paths.
+
+### Test Architecture
+
+- **Unit Tests**: Test individual functions (password hashing, JWT tokens, permissions).
+- **Integration Tests**: Test full API request/response cycles with mocked databases.
+- Uses **SQLite in-memory** for fast integration tests without external dependencies.
+
+---
+
+## 🚢 Deployment Instructions
+
+### Option 1: Vercel (Serverless)
+
+1. **Connect Repository**: Link your GitHub repo to Vercel.
+
+2. **Configure Framework**: Select **Other** or **FastAPI** as the framework preset.
+
+3. **Set Environment Variables** in Vercel Dashboard:
+
+   ```
+   POSTGRES_URL=postgresql+asyncpg://user:pass@host:port/db
+   MONGODB_URL=mongodb://user:pass@host:port
+   MONGODB_DATABASE=your_db_name
+   REDIS_URL=redis://user:pass@host:port
+   SECRET_KEY=your-super-secret-key
+   ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=30
+   REFRESH_TOKEN_EXPIRE_DAYS=7
+   ```
+
+4. **Override Install Command**:
+
+   ```
+   pip install -r requirements.txt
+   ```
+
+5. **Deploy**: Vercel will automatically deploy on push to `main`.
+
+> **Note**: Vercel serverless functions have timeouts. For production WebSocket connections and Celery workers, use a persistent hosting platform.
+
+### Option 2: Docker (Self-Hosted / VPS)
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/collaborative-workspace.git
+cd collaborative-workspace
+
+# Build and run with Docker Compose
+cd docker
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f api
+```
+
+### Option 3: Railway
+
+1. Create a new Railway project.
+2. Add PostgreSQL, MongoDB, and Redis services.
+3. Deploy the API from your GitHub repo.
+4. Configure environment variables using Railway's dashboard.
+5. Deploy the Celery worker as a separate service using `docker/Dockerfile.worker`.
+
+### Environment Variables Reference
+
+| Variable                      | Description                  | Default            |
+| :---------------------------- | :--------------------------- | :----------------- |
+| `POSTGRES_URL`                | PostgreSQL connection string | -                  |
+| `MONGODB_URL`                 | MongoDB connection string    | -                  |
+| `MONGODB_DATABASE`            | MongoDB database name        | `collab_workspace` |
+| `REDIS_URL`                   | Redis connection string      | -                  |
+| `CELERY_BROKER_URL`           | Celery broker (Redis) URL    | Same as REDIS_URL  |
+| `CELERY_RESULT_BACKEND`       | Celery result backend URL    | Same as REDIS_URL  |
+| `SECRET_KEY`                  | JWT signing secret           | -                  |
+| `ALGORITHM`                   | JWT algorithm                | `HS256`            |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime        | `30`               |
+| `REFRESH_TOKEN_EXPIRE_DAYS`   | Refresh token lifetime       | `7`                |
+| `DEBUG`                       | Enable debug mode            | `false`            |
 
 ---
 
@@ -168,13 +340,24 @@ pytest --cov=app --cov-report=term-missing
 
 ```
 app/
-├── api/v1/           # Versioned API endpoints
-├── core/             # Security, permissions, rate limiting
+├── api/v1/           # Versioned API endpoints (auth, projects, jobs, etc.)
+├── core/             # Security, permissions, rate limiting, metrics
 ├── models/           # SQLAlchemy (SQL) & Pydantic (NoSQL) models
 ├── schemas/          # Request/Response validation schemas
-├── db/               # Database connection utilities
-├── websocket/        # Real-time collaboration manager
+├── db/               # Database connection utilities (Postgres, Mongo, Redis)
+├── services/         # Business logic services (feature flags)
+├── websocket/        # Real-time collaboration (manager, handlers, pubsub)
 └── workers/          # Celery task definitions
+
+docker/
+├── Dockerfile        # API container
+├── Dockerfile.worker # Celery worker container
+└── docker-compose.yml
+
+tests/
+├── unit/             # Unit tests for core functions
+├── integration/      # API integration tests
+└── conftest.py       # Shared test fixtures
 ```
 
 ---
