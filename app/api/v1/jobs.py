@@ -74,10 +74,23 @@ async def create_job(
 async def create_code_execution_job(
     job_data: CodeExecutionJobCreate,
     current_user: User = Depends(get_current_user),
+    sync: bool = Query(False, description="Execute synchronously and return result immediately"),
 ) -> JobResponse:
-    """Submit code for async execution."""
-    collection = get_job_results_collection()
+    """
+    Submit code for execution.
 
+    Use `sync=true` to execute code immediately and return the result.
+    This bypasses the Celery worker queue and is useful for demos or
+    when workers are not deployed.
+
+    Note: Sync execution has a 10-second timeout limit.
+    """
+    import subprocess
+    import tempfile
+    import time as time_module
+    from pathlib import Path
+
+    collection = get_job_results_collection()
     job_id = str(uuid4())
 
     job = JobResult(
@@ -95,12 +108,127 @@ async def create_code_execution_job(
 
     await collection.insert_one(job.to_mongo())
 
-    # Submit to Celery
-    celery_app.send_task(
-        "app.workers.tasks.execute_code_task",
-        args=[job_id],
-        task_id=job_id,
-    )
+    if sync:
+        # Execute synchronously (for serverless/demo environments)
+        start_time = time_module.time()
+        timeout = min(job_data.timeout_seconds, 10)  # Cap at 10s for serverless
+
+        try:
+            # Update status to running
+            await collection.update_one(
+                {"_id": job_id},
+                {
+                    "$set": {
+                        "status": JobStatus.RUNNING.value,
+                        "started_at": datetime.now(UTC),
+                        "updated_at": datetime.now(UTC),
+                    }
+                },
+            )
+
+            # Execute based on language
+            language = job_data.language.lower()
+
+            if language == "python":
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+                    f.write(job_data.code)
+                    script_path = f.name
+
+                try:
+                    result = subprocess.run(
+                        ["python", script_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                    )
+                    output = result.stdout
+                    error = result.stderr if result.returncode != 0 else None
+                    final_status = (
+                        JobStatus.COMPLETED if result.returncode == 0 else JobStatus.FAILED
+                    )
+                finally:
+                    Path(script_path).unlink(missing_ok=True)
+
+            elif language == "javascript":
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
+                    f.write(job_data.code)
+                    script_path = f.name
+
+                try:
+                    result = subprocess.run(
+                        ["node", script_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                    )
+                    output = result.stdout
+                    error = result.stderr if result.returncode != 0 else None
+                    final_status = (
+                        JobStatus.COMPLETED if result.returncode == 0 else JobStatus.FAILED
+                    )
+                finally:
+                    Path(script_path).unlink(missing_ok=True)
+            else:
+                output = None
+                error = f"Unsupported language: {language}. Supported: python, javascript"
+                final_status = JobStatus.FAILED
+
+            execution_time = time_module.time() - start_time
+
+            # Update job with result
+            await collection.update_one(
+                {"_id": job_id},
+                {
+                    "$set": {
+                        "status": final_status.value,
+                        "result": {"output": output, "execution_time": execution_time},
+                        "error": error,
+                        "completed_at": datetime.now(UTC),
+                        "updated_at": datetime.now(UTC),
+                    }
+                },
+            )
+
+            # Return updated job
+            updated_doc = await collection.find_one({"_id": job_id})
+            return JobResponse(**JobResult.from_mongo(updated_doc).model_dump())
+
+        except subprocess.TimeoutExpired:
+            await collection.update_one(
+                {"_id": job_id},
+                {
+                    "$set": {
+                        "status": JobStatus.FAILED.value,
+                        "error": f"Execution timed out after {timeout} seconds",
+                        "completed_at": datetime.now(UTC),
+                        "updated_at": datetime.now(UTC),
+                    }
+                },
+            )
+            updated_doc = await collection.find_one({"_id": job_id})
+            return JobResponse(**JobResult.from_mongo(updated_doc).model_dump())
+
+        except Exception as e:
+            await collection.update_one(
+                {"_id": job_id},
+                {
+                    "$set": {
+                        "status": JobStatus.FAILED.value,
+                        "error": str(e),
+                        "completed_at": datetime.now(UTC),
+                        "updated_at": datetime.now(UTC),
+                    }
+                },
+            )
+            updated_doc = await collection.find_one({"_id": job_id})
+            return JobResponse(**JobResult.from_mongo(updated_doc).model_dump())
+    else:
+        # Async execution via Celery (requires deployed workers)
+        celery_app.send_task(
+            "app.workers.tasks.execute_code_task",
+            args=[job_id],
+            task_id=job_id,
+        )
 
     return JobResponse(**job.model_dump())
 
