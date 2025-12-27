@@ -6,17 +6,11 @@ from uuid import UUID
 
 import jwt
 try:
-    import argon2
+    from argon2 import PasswordHasher
+    from argon2.exceptions import VerifyMismatchError
+    ph = PasswordHasher()
 except ImportError:
-    pass
-from passlib.context import CryptContext
-
-from app.config import settings
-
-# Password hashing configuration
-# We use Argon2 as it's the modern winner of the Password Hashing Competition
-# and avoids the 72-byte limit and compatibility issues of bcrypt.
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+    ph = None
 
 # Token types
 ACCESS_TOKEN_TYPE = "access"
@@ -25,12 +19,19 @@ REFRESH_TOKEN_TYPE = "refresh"
 
 def hash_password(password: str) -> str:
     """Hash a password using Argon2."""
-    return pwd_context.hash(password)
+    if ph is None:
+        raise RuntimeError("argon2-cffi is not installed")
+    return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    if ph is None:
+        raise RuntimeError("argon2-cffi is not installed")
+    try:
+        return ph.verify(hashed_password, plain_password)
+    except VerifyMismatchError:
+        return False
 
 
 def create_access_token(
