@@ -8,12 +8,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/collab_workspace
-      - MONGODB_URL=mongodb://mongodb:27017
-      - MONGODB_DATABASE=collab_workspace
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - POSTGRES_URL=${POSTGRES_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/collab_workspace}
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongodb:27017}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-collab_workspace}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
       - SECRET_KEY=super-secret-key-change-in-production
       - DEBUG=false
       - LOG_LEVEL=INFO
@@ -36,12 +36,12 @@ services:
       dockerfile: docker/Dockerfile.worker
     container_name: collab-worker
     environment:
-      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/collab_workspace
-      - MONGODB_URL=mongodb://mongodb:27017
-      - MONGODB_DATABASE=collab_workspace
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - POSTGRES_URL=${POSTGRES_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/collab_workspace}
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongodb:27017}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-collab_workspace}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
       - SECRET_KEY=super-secret-key-change-in-production
     depends_on:
       - redis
@@ -58,8 +58,8 @@ services:
     container_name: collab-beat
     command: celery -A app.workers.celery_app beat --loglevel=info
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
     depends_on:
       - redis
     restart: unless-stopped
@@ -122,7 +122,7 @@ services:
     image: mher/flower:latest
     container_name: collab-flower
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
       - FLOWER_PORT=5555
     ports:
       - "5555:5555"
