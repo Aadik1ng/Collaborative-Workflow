@@ -1,7 +1,7 @@
 """User SQLAlchemy model."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, String, func
@@ -20,14 +20,10 @@ class User(Base):
     __tablename__ = "cw_users"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, index=True, nullable=False
-    )
-    username: Mapped[str] = mapped_column(
-        String(100), unique=True, index=True, nullable=False
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -41,10 +37,10 @@ class User(Base):
     )
 
     # Relationships
-    owned_projects: Mapped[List["Project"]] = relationship(
+    owned_projects: Mapped[list["Project"]] = relationship(
         "Project", back_populates="owner", cascade="all, delete-orphan"
     )
-    collaborations: Mapped[List["ProjectCollaborator"]] = relationship(
+    collaborations: Mapped[list["ProjectCollaborator"]] = relationship(
         "ProjectCollaborator",
         back_populates="user",
         cascade="all, delete-orphan",

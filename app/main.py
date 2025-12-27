@@ -1,21 +1,21 @@
 """Main FastAPI application entry point."""
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.config import settings
+from app.core.metrics import MetricsMiddleware
 from app.core.rate_limiter import RateLimitMiddleware
 from app.db.mongodb import close_mongodb, init_mongodb
 from app.db.postgres import close_postgres, init_postgres
 from app.db.redis import close_redis, get_redis, init_redis
-from app.websocket.routes import router as websocket_router
-from app.core.metrics import MetricsMiddleware
 from app.services.feature_flags import feature_flags
+from app.websocket.routes import router as websocket_router
 
 # Configure logging
 logging.basicConfig(
@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
 
     # Rate Limiting Middleware
     app.add_middleware(RateLimitMiddleware)
-    
+
     # Metrics Middleware
     app.add_middleware(MetricsMiddleware)
 
@@ -91,7 +91,7 @@ def create_app() -> FastAPI:
         latencies = await redis.hgetall("metrics:latencies")
         return {
             "request_counts": {k.decode(): int(v) for k, v in counts.items()},
-            "latencies_ms": {k.decode(): float(v)*1000 for k, v in latencies.items()}
+            "latencies_ms": {k.decode(): float(v) * 1000 for k, v in latencies.items()},
         }
 
     @app.get("/api/v1/flags/{name}", tags=["Feature Flags"])

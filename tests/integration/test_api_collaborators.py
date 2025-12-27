@@ -3,10 +3,12 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.sql.project import Project
-from app.models.sql.user import User
-from app.models.sql.role import ProjectCollaborator
+
 from app.core.permissions import Role
+from app.models.sql.project import Project
+from app.models.sql.role import ProjectCollaborator
+from app.models.sql.user import User
+
 
 @pytest.mark.asyncio
 class TestCollaboratorsAPI:
@@ -18,7 +20,7 @@ class TestCollaboratorsAPI:
         """Test inviting a collaborator."""
         project = Project(name="Invite Project", owner_id=test_user.id)
         db_session.add(project)
-        
+
         # Create another user to invite
         invited_user = User(
             email="invitee@example.com",
@@ -47,16 +49,13 @@ class TestCollaboratorsAPI:
 
         # Add owner to collaborators table
         owner_collab = ProjectCollaborator(
-            project_id=project.id,
-            user_id=test_user.id,
-            role=Role.OWNER.value
+            project_id=project.id, user_id=test_user.id, role=Role.OWNER.value
         )
         db_session.add(owner_collab)
         await db_session.commit()
 
         response = await client.get(
-            f"/api/v1/projects/{project.id}/collaborators",
-            headers=auth_headers
+            f"/api/v1/projects/{project.id}/collaborators", headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -70,16 +69,14 @@ class TestCollaboratorsAPI:
         """Test updating a collaborator's role."""
         project = Project(name="Update Collab Project", owner_id=test_user.id)
         db_session.add(project)
-        
+
         collab_user = User(email="c1@ex.com", username="c1", hashed_password="h")
         db_session.add(collab_user)
         await db_session.commit()
 
         # Add as collaborator
         collab = ProjectCollaborator(
-            project_id=project.id,
-            user_id=collab_user.id,
-            role=Role.VIEWER.value
+            project_id=project.id, user_id=collab_user.id, role=Role.VIEWER.value
         )
         db_session.add(collab)
         await db_session.commit()
@@ -87,7 +84,7 @@ class TestCollaboratorsAPI:
         response = await client.patch(
             f"/api/v1/projects/{project.id}/collaborators/{collab_user.id}",
             headers=auth_headers,
-            json={"role": "collaborator"}
+            json={"role": "collaborator"},
         )
 
         assert response.status_code == 200
@@ -99,7 +96,7 @@ class TestCollaboratorsAPI:
         """Test removing a collaborator."""
         project = Project(name="Remove Collab Project", owner_id=test_user.id)
         db_session.add(project)
-        
+
         collab_user = User(email="c2@ex.com", username="c2", hashed_password="h")
         db_session.add(collab_user)
         await db_session.commit()
@@ -109,7 +106,6 @@ class TestCollaboratorsAPI:
         await db_session.commit()
 
         response = await client.delete(
-            f"/api/v1/projects/{project.id}/collaborators/{collab_user.id}",
-            headers=auth_headers
+            f"/api/v1/projects/{project.id}/collaborators/{collab_user.id}", headers=auth_headers
         )
         assert response.status_code == 204

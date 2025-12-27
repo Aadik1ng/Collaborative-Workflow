@@ -1,7 +1,7 @@
 """Feature flag service."""
 
-from typing import Any, Dict
 from app.db.redis import cache_get, cache_set
+
 
 class FeatureFlagService:
     """Simple feature flag service using Redis."""
@@ -11,7 +11,7 @@ class FeatureFlagService:
         self._defaults = {
             "enable_code_execution": True,
             "enable_rate_limiting": True,
-            "maintenance_mode": False
+            "maintenance_mode": False,
         }
 
     async def is_enabled(self, flag_name: str) -> bool:
@@ -24,5 +24,6 @@ class FeatureFlagService:
     async def set_flag(self, flag_name: str, enabled: bool):
         """Set a feature flag value."""
         await cache_set(f"feature_flag:{flag_name}", str(enabled).lower())
+
 
 feature_flags = FeatureFlagService()

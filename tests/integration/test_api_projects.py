@@ -12,9 +12,7 @@ from app.models.sql.user import User
 class TestProjectsAPI:
     """Integration tests for project endpoints."""
 
-    async def test_create_project(
-        self, client: AsyncClient, test_user: User, auth_headers: dict
-    ):
+    async def test_create_project(self, client: AsyncClient, test_user: User, auth_headers: dict):
         """Test project creation."""
         response = await client.post(
             "/api/v1/projects",
@@ -33,9 +31,7 @@ class TestProjectsAPI:
         assert data["is_public"] is False
         assert data["owner_id"] == str(test_user.id)
 
-    async def test_create_project_minimal(
-        self, client: AsyncClient, auth_headers: dict
-    ):
+    async def test_create_project_minimal(self, client: AsyncClient, auth_headers: dict):
         """Test project creation with minimal data."""
         response = await client.post(
             "/api/v1/projects",
@@ -124,9 +120,7 @@ class TestProjectsAPI:
         assert data["name"] == "Test Project"
         assert data["description"] == "Test Description"
 
-    async def test_get_nonexistent_project(
-        self, client: AsyncClient, auth_headers: dict
-    ):
+    async def test_get_nonexistent_project(self, client: AsyncClient, auth_headers: dict):
         """Test getting nonexistent project fails."""
         from uuid import uuid4
 
@@ -180,9 +174,7 @@ class TestProjectsAPI:
         )
         assert response.status_code == 404
 
-    async def test_project_name_validation(
-        self, client: AsyncClient, auth_headers: dict
-    ):
+    async def test_project_name_validation(self, client: AsyncClient, auth_headers: dict):
         """Test project name validation."""
         # Empty name should fail
         response = await client.post(

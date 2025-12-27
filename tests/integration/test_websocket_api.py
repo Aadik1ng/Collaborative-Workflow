@@ -3,9 +3,11 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.sql.project import Project
 from app.models.sql.user import User
 from app.models.sql.workspace import Workspace
+
 
 @pytest.mark.asyncio
 class TestWebSocketAPI:
@@ -26,10 +28,7 @@ class TestWebSocketAPI:
         await db_session.commit()
         await db_session.refresh(ws)
 
-        response = await client.get(
-            f"/ws/workspace/{ws.id}/users",
-            headers=auth_headers
-        )
+        response = await client.get(f"/ws/workspace/{ws.id}/users", headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()

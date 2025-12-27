@@ -1,13 +1,17 @@
 """Security utilities for JWT authentication and password hashing."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import jwt
+
+from app.config import settings
+
 try:
     from argon2 import PasswordHasher
     from argon2.exceptions import VerifyMismatchError
+
     ph = PasswordHasher()
 except ImportError:
     ph = None
@@ -36,16 +40,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(
     user_id: UUID,
-    additional_claims: Optional[dict[str, Any]] = None,
+    additional_claims: dict[str, Any] | None = None,
 ) -> str:
     """Create a JWT access token."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user_id),
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "type": ACCESS_TOKEN_TYPE,
     }
     if additional_claims:
@@ -56,13 +58,11 @@ def create_access_token(
 
 def create_refresh_token(user_id: UUID) -> str:
     """Create a JWT refresh token."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub": str(user_id),
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "type": REFRESH_TOKEN_TYPE,
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
@@ -107,7 +107,7 @@ def create_invitation_token(
     expires_hours: int = 48,
 ) -> str:
     """Create a JWT token for project invitations."""
-    expire = datetime.now(timezone.utc) + timedelta(hours=expires_hours)
+    expire = datetime.now(UTC) + timedelta(hours=expires_hours)
     payload = {
         "project_id": str(project_id),
         "inviter_id": str(inviter_id),

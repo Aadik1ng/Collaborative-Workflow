@@ -1,7 +1,7 @@
 """ProjectCollaborator SQLAlchemy model for role-based access."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
@@ -27,28 +27,20 @@ class ProjectCollaborator(Base):
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("cw_users.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    role: Mapped[str] = mapped_column(
-        String(50), default=Role.VIEWER.value, nullable=False
-    )
-    invited_by: Mapped[Optional[UUID]] = mapped_column(
+    role: Mapped[str] = mapped_column(String(50), default=Role.VIEWER.value, nullable=False)
+    invited_by: Mapped[UUID | None] = mapped_column(
         ForeignKey("cw_users.id", ondelete="SET NULL"), nullable=True
     )
     invited_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    accepted_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Unique constraint: one role per user per project
-    __table_args__ = (
-        UniqueConstraint("project_id", "user_id", name="uq_project_collaborator"),
-    )
+    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_project_collaborator"),)
 
     # Relationships
-    project: Mapped["Project"] = relationship(
-        "Project", back_populates="collaborators"
-    )
+    project: Mapped["Project"] = relationship("Project", back_populates="collaborators")
     user: Mapped["User"] = relationship(
         "User", back_populates="collaborations", foreign_keys=[user_id]
     )

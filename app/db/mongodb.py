@@ -21,6 +21,7 @@ async def init_mongodb() -> None:
         await _create_indexes()
     except Exception as e:
         import logging
+
         logging.warning(f"Could not create MongoDB indexes (non-fatal): {e}")
 
 

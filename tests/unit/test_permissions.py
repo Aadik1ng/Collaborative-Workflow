@@ -1,14 +1,12 @@
 """Unit tests for role-based access control."""
 
-import pytest
-
 from app.core.permissions import (
+    ROLE_PERMISSIONS,
     Permission,
     Role,
     has_all_permissions,
     has_any_permission,
     has_permission,
-    ROLE_PERMISSIONS,
 )
 
 

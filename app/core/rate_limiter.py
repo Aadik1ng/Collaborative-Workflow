@@ -1,7 +1,7 @@
 """Rate limiting middleware using Redis sliding window."""
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -66,9 +66,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         return f"ip:{client_ip}"
 
-    async def _check_rate_limit(
-        self, client_id: str
-    ) -> tuple[bool, int, int]:
+    async def _check_rate_limit(self, client_id: str) -> tuple[bool, int, int]:
         """Check rate limit using Redis sliding window.
 
         Returns:

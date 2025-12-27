@@ -1,10 +1,10 @@
 """Collaborator management endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -184,7 +184,7 @@ async def accept_invitation(
             detail="Invitation not found or already accepted",
         )
 
-    collaborator.accepted_at = datetime.now(timezone.utc)
+    collaborator.accepted_at = datetime.now(UTC)
     await db.flush()
 
     return {"message": "Invitation accepted successfully"}
@@ -231,7 +231,7 @@ async def get_invitation_details(
         project_name=project.name,
         inviter_name=inviter.full_name or inviter.username,
         role=payload["role"],
-        expires_at=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+        expires_at=datetime.fromtimestamp(payload["exp"], tz=UTC),
     )
 
 

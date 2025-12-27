@@ -3,9 +3,11 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.sql.project import Project
 from app.models.sql.user import User
 from app.models.sql.workspace import Workspace
+
 
 @pytest.mark.asyncio
 class TestWorkspacesAPI:
@@ -27,7 +29,7 @@ class TestWorkspacesAPI:
             json={
                 "name": "New Workspace",
                 "description": "A fresh workspace",
-                "settings": {"theme": "dark"}
+                "settings": {"theme": "dark"},
             },
         )
 
@@ -52,8 +54,7 @@ class TestWorkspacesAPI:
         await db_session.commit()
 
         response = await client.get(
-            f"/api/v1/projects/{project.id}/workspaces",
-            headers=auth_headers
+            f"/api/v1/projects/{project.id}/workspaces", headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -76,9 +77,7 @@ class TestWorkspacesAPI:
         await db_session.refresh(ws)
 
         response = await client.patch(
-            f"/api/v1/workspaces/{ws.id}",
-            headers=auth_headers,
-            json={"name": "Updated Name"}
+            f"/api/v1/workspaces/{ws.id}", headers=auth_headers, json={"name": "Updated Name"}
         )
 
         assert response.status_code == 200
@@ -98,10 +97,7 @@ class TestWorkspacesAPI:
         await db_session.commit()
         await db_session.refresh(ws)
 
-        response = await client.delete(
-            f"/api/v1/workspaces/{ws.id}",
-            headers=auth_headers
-        )
+        response = await client.delete(f"/api/v1/workspaces/{ws.id}", headers=auth_headers)
         assert response.status_code == 204
 
         # Verify 404

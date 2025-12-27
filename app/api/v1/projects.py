@@ -1,7 +1,6 @@
 """Project endpoints."""
 
 from math import ceil
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -40,7 +39,7 @@ router = APIRouter()
 async def list_projects(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
+    search: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectListResponse:
@@ -122,9 +121,7 @@ async def get_project(
 
     # Get workspace count
     workspace_count = (
-        await db.execute(
-            select(func.count()).where(Workspace.project_id == project.id)
-        )
+        await db.execute(select(func.count()).where(Workspace.project_id == project.id))
     ).scalar() or 0
 
     # Get collaborator count
@@ -139,9 +136,7 @@ async def get_project(
 
     # Load owner
     result = await db.execute(
-        select(Project)
-        .where(Project.id == project.id)
-        .options(selectinload(Project.owner))
+        select(Project).where(Project.id == project.id).options(selectinload(Project.owner))
     )
     project = result.scalar_one()
 
@@ -167,9 +162,7 @@ async def get_project(
 async def update_project(
     project_id: UUID,
     update_data: ProjectUpdate,
-    project_data: tuple[Project, Role] = Depends(
-        ProjectPermission(Role.COLLABORATOR)
-    ),
+    project_data: tuple[Project, Role] = Depends(ProjectPermission(Role.COLLABORATOR)),
     db: AsyncSession = Depends(get_db),
 ) -> Project:
     """Update project details."""

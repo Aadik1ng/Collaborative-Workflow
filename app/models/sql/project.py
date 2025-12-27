@@ -1,7 +1,7 @@
 """Project SQLAlchemy model."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
@@ -22,7 +22,7 @@ class Project(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     owner_id: Mapped[UUID] = mapped_column(
         ForeignKey("cw_users.id", ondelete="CASCADE"), index=True, nullable=False
     )
@@ -39,10 +39,10 @@ class Project(Base):
 
     # Relationships
     owner: Mapped["User"] = relationship("User", back_populates="owned_projects")
-    workspaces: Mapped[List["Workspace"]] = relationship(
+    workspaces: Mapped[list["Workspace"]] = relationship(
         "Workspace", back_populates="project", cascade="all, delete-orphan"
     )
-    collaborators: Mapped[List["ProjectCollaborator"]] = relationship(
+    collaborators: Mapped[list["ProjectCollaborator"]] = relationship(
         "ProjectCollaborator", back_populates="project", cascade="all, delete-orphan"
     )
 

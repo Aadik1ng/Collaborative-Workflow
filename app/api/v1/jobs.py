@@ -1,8 +1,7 @@
 """Job processing endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from math import ceil
-from typing import Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -146,7 +145,7 @@ async def get_job(
 async def list_jobs(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status_filter: Optional[JobStatus] = None,
+    status_filter: JobStatus | None = None,
     current_user: User = Depends(get_current_user),
 ) -> JobListResponse:
     """List all jobs for the current user."""
@@ -221,7 +220,7 @@ async def cancel_job(
         {
             "$set": {
                 "status": JobStatus.CANCELLED.value,
-                "updated_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(UTC),
             }
         },
     )

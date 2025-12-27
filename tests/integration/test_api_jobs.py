@@ -1,9 +1,8 @@
 """Integration tests for jobs API."""
 
 import pytest
-import asyncio
 from httpx import AsyncClient
-from app.models.sql.user import User
+
 
 @pytest.mark.asyncio
 class TestJobsAPI:
@@ -14,11 +13,7 @@ class TestJobsAPI:
         response = await client.post(
             "/api/v1/jobs/code-execution",
             headers=auth_headers,
-            json={
-                "code": "print('Test Job')",
-                "language": "python",
-                "timeout_seconds": 10
-            },
+            json={"code": "print('Test Job')", "language": "python", "timeout_seconds": 10},
         )
 
         assert response.status_code == 202
@@ -55,6 +50,6 @@ class TestJobsAPI:
         response = await client.post(f"/api/v1/jobs/{job_id}/cancel", headers=auth_headers)
         # Note: If worker picks it up instantly, might already be completed.
         # But for testing the API endpoint:
-        assert response.status_code in [200, 400] # 400 if already finished
+        assert response.status_code in [200, 400]  # 400 if already finished
         if response.status_code == 200:
             assert response.json()["status"] == "cancelled"

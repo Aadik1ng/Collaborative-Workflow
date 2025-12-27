@@ -1,7 +1,6 @@
 """Authentication schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -13,7 +12,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=100)
-    full_name: Optional[str] = Field(None, max_length=255)
+    full_name: str | None = Field(None, max_length=255)
 
     @field_validator("username")
     @classmethod
@@ -37,7 +36,7 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     username: str
-    full_name: Optional[str] = None
+    full_name: str | None = None
     is_active: bool = True
     created_at: datetime
 
@@ -70,12 +69,12 @@ class PasswordChange(BaseModel):
 class UserUpdate(BaseModel):
     """Schema for updating user profile."""
 
-    full_name: Optional[str] = Field(None, max_length=255)
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    full_name: str | None = Field(None, max_length=255)
+    username: str | None = Field(None, min_length=3, max_length=50)
 
     @field_validator("username")
     @classmethod
-    def validate_username(cls, v: Optional[str]) -> Optional[str]:
+    def validate_username(cls, v: str | None) -> str | None:
         """Validate username format."""
         if v is None:
             return v

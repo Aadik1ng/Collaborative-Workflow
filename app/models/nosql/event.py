@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -24,26 +24,26 @@ class JobResult(BaseModel):
     user_id: str
     task_type: str
     status: JobStatus = JobStatus.PENDING
-    input_data: Dict[str, Any] = Field(default_factory=dict)
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    input_data: dict[str, Any] = Field(default_factory=dict)
+    result: dict[str, Any] | None = None
+    error: str | None = None
     attempts: int = 0
     max_retries: int = 3
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     class Config:
         populate_by_name = True
         use_enum_values = True
 
-    def to_mongo(self) -> Dict[str, Any]:
+    def to_mongo(self) -> dict[str, Any]:
         """Convert to MongoDB document format."""
         return self.model_dump(by_alias=True)
 
     @classmethod
-    def from_mongo(cls, data: Dict[str, Any]) -> "JobResult":
+    def from_mongo(cls, data: dict[str, Any]) -> "JobResult":
         """Create from MongoDB document."""
         return cls(**data)
 

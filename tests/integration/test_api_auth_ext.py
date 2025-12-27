@@ -2,8 +2,9 @@
 
 import pytest
 from httpx import AsyncClient
+
 from app.models.sql.user import User
-from app.core.security import create_refresh_token
+
 
 @pytest.mark.asyncio
 class TestAuthAPIExtended:
@@ -43,10 +44,7 @@ class TestAuthAPIExtended:
         response = await client.post(
             "/api/v1/auth/change-password",
             headers=auth_headers,
-            json={
-                "current_password": "testpass123",
-                "new_password": "newsecurepass123"
-            },
+            json={"current_password": "testpass123", "new_password": "newsecurepass123"},
         )
         assert response.status_code == 204
 

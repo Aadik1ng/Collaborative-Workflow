@@ -1,6 +1,5 @@
 """API dependencies for dependency injection."""
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -66,11 +65,9 @@ async def get_current_active_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
-        HTTPBearer(auto_error=False)
-    ),
+    credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """Get the current user if authenticated, otherwise None."""
     if credentials is None:
         return None
@@ -88,7 +85,7 @@ async def get_optional_user(
 class ProjectPermission:
     """Dependency for checking project permissions."""
 
-    def __init__(self, required_role: Optional[Role] = None):
+    def __init__(self, required_role: Role | None = None):
         self.required_role = required_role
 
     async def __call__(

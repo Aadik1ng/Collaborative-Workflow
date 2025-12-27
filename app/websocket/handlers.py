@@ -1,8 +1,8 @@
 """WebSocket event handlers."""
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 
 from app.db.mongodb import get_activities_collection
 from app.models.nosql.activity import ActivityEvent, ActivityType
@@ -30,7 +30,7 @@ async def handle_user_join(
             "data": {
                 "user_id": user_id,
                 "username": username,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         },
         exclude_connection=connection_id,
@@ -76,7 +76,7 @@ async def handle_user_leave(
     connected_at: datetime,
 ) -> None:
     """Handle user leave event."""
-    duration_seconds = int((datetime.now(timezone.utc) - connected_at).total_seconds())
+    duration_seconds = int((datetime.now(UTC) - connected_at).total_seconds())
 
     # Broadcast leave event
     await connection_manager.broadcast_to_workspace(
@@ -86,7 +86,7 @@ async def handle_user_leave(
             "data": {
                 "user_id": user_id,
                 "username": username,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         },
     )
@@ -118,7 +118,7 @@ async def handle_file_change(
     workspace_id: str,
     user_id: str,
     username: str,
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
 ) -> None:
     """Handle file change event."""
     event_data = {
@@ -127,7 +127,7 @@ async def handle_file_change(
         "file_path": payload.get("file_path"),
         "operation": payload.get("operation"),
         "content_hash": payload.get("content_hash"),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     # Broadcast to other users
@@ -163,7 +163,7 @@ async def handle_cursor_update(
     workspace_id: str,
     user_id: str,
     username: str,
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
 ) -> None:
     """Handle cursor update event (throttled, not logged to DB)."""
     event_data = {
@@ -172,7 +172,7 @@ async def handle_cursor_update(
         "file_path": payload.get("file_path"),
         "position": payload.get("position"),
         "selection": payload.get("selection"),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     # Broadcast to other users (no persistence for cursor updates)
@@ -191,14 +191,14 @@ async def handle_message(
     workspace_id: str,
     user_id: str,
     username: str,
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
 ) -> None:
     """Handle chat message event."""
     event_data = {
         "user_id": user_id,
         "username": username,
         "message": payload.get("message"),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     # Broadcast to all users including sender
@@ -225,7 +225,7 @@ async def _log_activity(
     user_id: str,
     username: str,
     event_type: ActivityType,
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     project_id: str = "",
 ) -> None:
     """Log activity to MongoDB."""

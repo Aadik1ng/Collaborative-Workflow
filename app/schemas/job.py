@@ -1,8 +1,7 @@
 """Job schemas for async processing."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -13,8 +12,8 @@ class JobCreate(BaseModel):
     """Schema for creating a job."""
 
     task_type: str = Field(..., max_length=100)
-    input_data: Dict[str, Any] = Field(default_factory=dict)
-    idempotency_key: Optional[str] = Field(None, max_length=255)
+    input_data: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str | None = Field(None, max_length=255)
 
 
 class CodeExecutionJobCreate(BaseModel):
@@ -33,20 +32,20 @@ class JobResponse(BaseModel):
     user_id: str
     task_type: str
     status: JobStatus
-    input_data: Dict[str, Any] = Field(default_factory=dict)
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    input_data: dict[str, Any] = Field(default_factory=dict)
+    result: dict[str, Any] | None = None
+    error: str | None = None
     attempts: int = 0
     created_at: datetime
     updated_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class JobListResponse(BaseModel):
     """Schema for paginated job list."""
 
-    items: List[JobResponse]
+    items: list[JobResponse]
     total: int
     page: int
     page_size: int

@@ -3,7 +3,8 @@
 import asyncio
 import json
 import logging
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from app.db.redis import get_redis
 
@@ -14,10 +15,10 @@ class RedisPubSub:
     """Redis Pub/Sub manager for cross-instance communication."""
 
     def __init__(self):
-        self._subscriptions: Dict[str, asyncio.Task] = {}
-        self._callbacks: Dict[str, Callable] = {}
+        self._subscriptions: dict[str, asyncio.Task] = {}
+        self._callbacks: dict[str, Callable] = {}
 
-    async def publish(self, channel: str, message: Dict[str, Any]) -> None:
+    async def publish(self, channel: str, message: dict[str, Any]) -> None:
         """Publish a message to a Redis channel."""
         try:
             redis = get_redis()
@@ -29,7 +30,7 @@ class RedisPubSub:
     async def subscribe(
         self,
         channel: str,
-        callback: Callable[[Dict[str, Any]], None],
+        callback: Callable[[dict[str, Any]], None],
     ) -> None:
         """Subscribe to a Redis channel with a callback."""
         if channel in self._subscriptions:
@@ -105,8 +106,8 @@ redis_pubsub = RedisPubSub()
 async def publish_workspace_event(
     workspace_id: str,
     event_type: str,
-    data: Dict[str, Any],
-    sender_id: Optional[str] = None,
+    data: dict[str, Any],
+    sender_id: str | None = None,
 ) -> None:
     """Publish an event to a workspace channel."""
     message = {
@@ -124,7 +125,7 @@ async def publish_workspace_event(
 async def publish_user_event(
     user_id: str,
     event_type: str,
-    data: Dict[str, Any],
+    data: dict[str, Any],
 ) -> None:
     """Publish an event to a user channel."""
     message = {

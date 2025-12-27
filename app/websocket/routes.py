@@ -2,7 +2,6 @@
 
 import json
 import logging
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-async def authenticate_websocket(token: str) -> Optional[User]:
+async def authenticate_websocket(token: str) -> User | None:
     """Authenticate WebSocket connection using JWT token."""
     try:
         payload = verify_access_token(token)
@@ -47,12 +46,10 @@ async def authenticate_websocket(token: str) -> Optional[User]:
 async def verify_workspace_access(
     workspace_id: UUID,
     user_id: UUID,
-) -> Optional[Workspace]:
+) -> Workspace | None:
     """Verify user has access to the workspace."""
     async with async_session_factory() as session:
-        result = await session.execute(
-            select(Workspace).where(Workspace.id == workspace_id)
-        )
+        result = await session.execute(select(Workspace).where(Workspace.id == workspace_id))
         workspace = result.scalar_one_or_none()
 
         if workspace is None:

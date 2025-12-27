@@ -204,9 +204,7 @@ async def update_me(
     if user_data.username is not None:
         # Check if username is taken
         result = await db.execute(
-            select(User).where(
-                User.username == user_data.username, User.id != current_user.id
-            )
+            select(User).where(User.username == user_data.username, User.id != current_user.id)
         )
         if result.scalar_one_or_none():
             raise HTTPException(

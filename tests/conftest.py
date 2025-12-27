@@ -1,7 +1,7 @@
 """Pytest fixtures and configuration."""
 
 import asyncio
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.config import settings
 from app.db.postgres import Base, get_db
 from app.main import app
 from app.models.sql.user import User
@@ -70,66 +69,66 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     mock_redis.set = AsyncMock()
     mock_redis.delete = AsyncMock()
     # Add other Redis methods as needed
-    
+
     # Mock MongoDB
     mock_mongodb = MagicMock()
     mock_collection = MagicMock()
-    
+
     # Stateful mock for jobs
     stored_jobs = {}
-    
+
     async def mock_insert_one(doc):
         job_id = doc.get("_id") or str(uuid4())
         stored_jobs[job_id] = doc
         return MagicMock(inserted_id=job_id)
-        
+
     async def mock_find_one(query):
         job_id = query.get("_id")
         return stored_jobs.get(job_id)
 
     mock_collection.insert_one = AsyncMock(side_effect=mock_insert_one)
     mock_collection.find_one = AsyncMock(side_effect=mock_find_one)
-    
+
     # Mock for cursor-like chaining: collection.find().sort().skip().limit()
     mock_cursor = MagicMock()
     mock_cursor.sort.return_value = mock_cursor
     mock_cursor.skip.return_value = mock_cursor
     mock_cursor.limit.return_value = mock_cursor
-    
+
     # Async iterator for cursor
     async def mock_cursor_iter(self):
         for job in list(stored_jobs.values()):
             yield job
+
     mock_cursor.__aiter__ = mock_cursor_iter
     mock_cursor.to_list = AsyncMock(return_value=list(stored_jobs.values()))
-    
+
     mock_collection.find.return_value = mock_cursor
+
     async def mock_count_documents(query):
         return len(stored_jobs)
-        
+
     mock_collection.count_documents = AsyncMock(side_effect=mock_count_documents)
     mock_collection.update_one = AsyncMock()
-    
+
     mock_mongodb.job_results = mock_collection
     mock_mongodb.__getitem__.return_value = mock_collection
 
-    with patch("app.db.redis.redis_client", MagicMock()), \
-         patch("app.db.redis.get_redis", return_value=MagicMock()), \
-         patch("app.db.redis.cache_get", AsyncMock(return_value=None)), \
-         patch("app.db.redis.cache_set", AsyncMock()), \
-         patch("app.db.redis.cache_delete", AsyncMock()), \
-         patch("app.api.v1.auth.cache_set", AsyncMock()), \
-         patch("app.api.v1.auth.cache_delete", AsyncMock()), \
-         patch("app.db.mongodb.mongodb_database", mock_mongodb), \
-         patch("app.db.mongodb.get_mongodb", return_value=mock_mongodb), \
-         patch("app.db.mongodb.get_job_results_collection", return_value=mock_collection):
-
+    with (
+        patch("app.db.redis.redis_client", MagicMock()),
+        patch("app.db.redis.get_redis", return_value=MagicMock()),
+        patch("app.db.redis.cache_get", AsyncMock(return_value=None)),
+        patch("app.db.redis.cache_set", AsyncMock()),
+        patch("app.db.redis.cache_delete", AsyncMock()),
+        patch("app.api.v1.auth.cache_set", AsyncMock()),
+        patch("app.api.v1.auth.cache_delete", AsyncMock()),
+        patch("app.db.mongodb.mongodb_database", mock_mongodb),
+        patch("app.db.mongodb.get_mongodb", return_value=mock_mongodb),
+        patch("app.db.mongodb.get_job_results_collection", return_value=mock_collection),
+    ):
         app.dependency_overrides[get_db] = override_get_db
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             yield ac
 
         app.dependency_overrides.clear()

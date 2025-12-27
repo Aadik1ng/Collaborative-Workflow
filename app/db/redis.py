@@ -1,13 +1,11 @@
 """Redis connection and client management."""
 
-from typing import Optional
-
 import redis.asyncio as aioredis
 
 from app.config import settings
 
 # Global Redis client
-redis_client: Optional[aioredis.Redis] = None
+redis_client: aioredis.Redis | None = None
 
 
 async def init_redis() -> None:
@@ -44,7 +42,7 @@ async def get_redis_dependency() -> aioredis.Redis:
 
 
 # Cache utility functions
-async def cache_get(key: str) -> Optional[str]:
+async def cache_get(key: str) -> str | None:
     """Get value from cache."""
     client = get_redis()
     return await client.get(key)

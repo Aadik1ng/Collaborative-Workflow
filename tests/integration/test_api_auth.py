@@ -2,7 +2,6 @@
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.sql.user import User
 
@@ -30,9 +29,7 @@ class TestAuthAPI:
         assert "id" in data
         assert "hashed_password" not in data
 
-    async def test_register_duplicate_email(
-        self, client: AsyncClient, test_user: User
-    ):
+    async def test_register_duplicate_email(self, client: AsyncClient, test_user: User):
         """Test registration with duplicate email fails."""
         response = await client.post(
             "/api/v1/auth/register",
@@ -46,9 +43,7 @@ class TestAuthAPI:
         assert response.status_code == 400
         assert "already registered" in response.json()["detail"]
 
-    async def test_register_duplicate_username(
-        self, client: AsyncClient, test_user: User
-    ):
+    async def test_register_duplicate_username(self, client: AsyncClient, test_user: User):
         """Test registration with duplicate username fails."""
         response = await client.post(
             "/api/v1/auth/register",
@@ -121,9 +116,7 @@ class TestAuthAPI:
 
         assert response.status_code == 401
 
-    async def test_update_profile(
-        self, client: AsyncClient, test_user: User, auth_headers: dict
-    ):
+    async def test_update_profile(self, client: AsyncClient, test_user: User, auth_headers: dict):
         """Test updating user profile."""
         response = await client.patch(
             "/api/v1/auth/me",

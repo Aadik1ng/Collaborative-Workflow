@@ -1,9 +1,8 @@
 """Role-based access control (RBAC) for the application."""
 
+from collections.abc import Callable
 from enum import Enum
 from functools import wraps
-from typing import Callable, List
-from uuid import UUID
 
 from fastapi import HTTPException, status
 
@@ -84,13 +83,13 @@ def has_permission(role: Role, permission: Permission) -> bool:
     return permission in ROLE_PERMISSIONS.get(role, set())
 
 
-def has_any_permission(role: Role, permissions: List[Permission]) -> bool:
+def has_any_permission(role: Role, permissions: list[Permission]) -> bool:
     """Check if a role has any of the specified permissions."""
     role_perms = ROLE_PERMISSIONS.get(role, set())
     return any(perm in role_perms for perm in permissions)
 
 
-def has_all_permissions(role: Role, permissions: List[Permission]) -> bool:
+def has_all_permissions(role: Role, permissions: list[Permission]) -> bool:
     """Check if a role has all of the specified permissions."""
     role_perms = ROLE_PERMISSIONS.get(role, set())
     return all(perm in role_perms for perm in permissions)

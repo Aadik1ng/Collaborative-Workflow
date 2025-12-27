@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -22,20 +22,20 @@ class ActivityType(str, Enum):
 class ActivityEvent(BaseModel):
     """Activity event model for MongoDB storage."""
 
-    id: Optional[str] = Field(None, alias="_id")
+    id: str | None = Field(None, alias="_id")
     project_id: str
-    workspace_id: Optional[str] = None
+    workspace_id: str | None = None
     user_id: str
     username: str
     event_type: ActivityType
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    payload: dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         populate_by_name = True
         use_enum_values = True
 
-    def to_mongo(self) -> Dict[str, Any]:
+    def to_mongo(self) -> dict[str, Any]:
         """Convert to MongoDB document format."""
         data = self.model_dump(by_alias=True, exclude_none=True)
         if data.get("_id") is None:
@@ -43,7 +43,7 @@ class ActivityEvent(BaseModel):
         return data
 
     @classmethod
-    def from_mongo(cls, data: Dict[str, Any]) -> "ActivityEvent":
+    def from_mongo(cls, data: dict[str, Any]) -> "ActivityEvent":
         """Create from MongoDB document."""
         if data.get("_id"):
             data["_id"] = str(data["_id"])
@@ -53,14 +53,14 @@ class ActivityEvent(BaseModel):
 class UserJoinPayload(BaseModel):
     """Payload for user join events."""
 
-    connection_id: Optional[str] = None
+    connection_id: str | None = None
 
 
 class UserLeavePayload(BaseModel):
     """Payload for user leave events."""
 
-    reason: Optional[str] = None
-    duration_seconds: Optional[int] = None
+    reason: str | None = None
+    duration_seconds: int | None = None
 
 
 class FileChangePayload(BaseModel):
@@ -68,8 +68,8 @@ class FileChangePayload(BaseModel):
 
     file_path: str
     operation: str  # create, update, delete, rename
-    content_hash: Optional[str] = None
-    old_path: Optional[str] = None  # For rename operations
+    content_hash: str | None = None
+    old_path: str | None = None  # For rename operations
 
 
 class CursorUpdatePayload(BaseModel):
@@ -78,5 +78,5 @@ class CursorUpdatePayload(BaseModel):
     file_path: str
     line: int
     column: int
-    selection_start: Optional[Dict[str, int]] = None
-    selection_end: Optional[Dict[str, int]] = None
+    selection_start: dict[str, int] | None = None
+    selection_end: dict[str, int] | None = None

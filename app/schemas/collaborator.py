@@ -1,7 +1,6 @@
 """Collaborator schemas."""
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
@@ -14,7 +13,7 @@ class CollaboratorInvite(BaseModel):
 
     email: EmailStr
     role: Role = Role.VIEWER
-    message: Optional[str] = Field(None, max_length=500)
+    message: str | None = Field(None, max_length=500)
 
 
 class CollaboratorRoleUpdate(BaseModel):
@@ -30,10 +29,10 @@ class CollaboratorResponse(BaseModel):
     user_id: UUID
     username: str
     email: str
-    full_name: Optional[str] = None
+    full_name: str | None = None
     role: str
     invited_at: datetime
-    accepted_at: Optional[datetime] = None
+    accepted_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -42,7 +41,7 @@ class CollaboratorResponse(BaseModel):
 class CollaboratorListResponse(BaseModel):
     """Schema for collaborator list."""
 
-    items: List[CollaboratorResponse]
+    items: list[CollaboratorResponse]
     total: int
 
 

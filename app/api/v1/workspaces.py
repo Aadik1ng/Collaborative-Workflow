@@ -1,7 +1,6 @@
 """Workspace endpoints."""
 
 from math import ceil
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -38,7 +37,7 @@ async def list_workspaces(
     project_id: UUID,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
+    search: str | None = None,
     project_data: tuple[Project, Role] = Depends(require_project_viewer),
     db: AsyncSession = Depends(get_db),
 ) -> WorkspaceListResponse:

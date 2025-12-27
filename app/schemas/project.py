@@ -1,7 +1,6 @@
 """Project schemas."""
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -13,16 +12,16 @@ class ProjectCreate(BaseModel):
     """Schema for creating a project."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=2000)
+    description: str | None = Field(None, max_length=2000)
     is_public: bool = False
 
 
 class ProjectUpdate(BaseModel):
     """Schema for updating a project."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=2000)
-    is_public: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=2000)
+    is_public: bool | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -30,7 +29,7 @@ class ProjectResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     owner_id: UUID
     is_public: bool
     created_at: datetime
@@ -51,7 +50,7 @@ class ProjectDetailResponse(ProjectResponse):
 class ProjectListResponse(BaseModel):
     """Schema for paginated project list."""
 
-    items: List[ProjectResponse]
+    items: list[ProjectResponse]
     total: int
     page: int
     page_size: int

@@ -2,12 +2,15 @@
 
 import logging
 import random
+import subprocess
+import sys
+import tempfile
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 from celery import Task
-from celery.exceptions import MaxRetriesExceededError
 from pymongo import MongoClient
 
 from app.config import settings
@@ -53,7 +56,7 @@ class BaseTask(Task):
                     "$set": {
                         "status": JobStatus.FAILED.value,
                         "error": str(exc),
-                        "updated_at": datetime.now(timezone.utc),
+                        "updated_at": datetime.now(UTC),
                     }
                 },
             )
@@ -65,16 +68,12 @@ class BaseTask(Task):
         logger.info(f"Task {task_id} completed successfully")
 
 
-import subprocess
-import tempfile
-import sys
-from pathlib import Path
 
 def _execute_code_locally(
     code: str,
     language: str,
     timeout_seconds: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Execute code locally using subprocess (minimal implementation)."""
     if language.lower() not in ["python", "python3"]:
         return {
@@ -98,15 +97,15 @@ def _execute_code_locally(
             text=True,
             timeout=timeout_seconds,
         )
-        
+
         execution_time_ms = int((time.time() - start_time) * 1000)
-        
+
         return {
             "stdout": result.stdout,
             "stderr": result.stderr,
             "exit_code": result.returncode,
             "execution_time_ms": execution_time_ms,
-            "memory_used_mb": random.uniform(5, 15), # Simplified memory tracking
+            "memory_used_mb": random.uniform(5, 15),  # Simplified memory tracking
             "language": language,
         }
 
@@ -137,7 +136,7 @@ def _execute_code_locally(
     retry_backoff_max=600,
     max_retries=3,
 )
-def execute_code_task(self, job_id: str) -> Dict[str, Any]:
+def execute_code_task(self, job_id: str) -> dict[str, Any]:
     """
     Actual code execution task.
     """
@@ -154,8 +153,8 @@ def execute_code_task(self, job_id: str) -> Dict[str, Any]:
         {
             "$set": {
                 "status": JobStatus.RUNNING.value,
-                "started_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "started_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             },
             "$inc": {"attempts": 1},
         },
@@ -180,8 +179,8 @@ def execute_code_task(self, job_id: str) -> Dict[str, Any]:
                 "$set": {
                     "status": JobStatus.COMPLETED.value,
                     "result": result,
-                    "completed_at": datetime.now(timezone.utc),
-                    "updated_at": datetime.now(timezone.utc),
+                    "completed_at": datetime.now(UTC),
+                    "updated_at": datetime.now(UTC),
                 }
             },
         )
@@ -193,10 +192,10 @@ def execute_code_task(self, job_id: str) -> Dict[str, Any]:
             raise TransientError(str(e))
         else:
             collection.update_one(
-                {"_id": job_id},
-                {"$set": {"status": JobStatus.FAILED.value, "error": str(e)}}
+                {"_id": job_id}, {"$set": {"status": JobStatus.FAILED.value, "error": str(e)}}
             )
             raise
+
 
 @celery_app.task(
     bind=True,
@@ -206,7 +205,7 @@ def execute_code_task(self, job_id: str) -> Dict[str, Any]:
     retry_backoff_max=300,
     max_retries=3,
 )
-def process_generic_job(self, job_id: str) -> Dict[str, Any]:
+def process_generic_job(self, job_id: str) -> dict[str, Any]:
     """
     Generic job processor for various task types.
     """
@@ -224,8 +223,8 @@ def process_generic_job(self, job_id: str) -> Dict[str, Any]:
         {
             "$set": {
                 "status": JobStatus.RUNNING.value,
-                "started_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "started_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             },
             "$inc": {"attempts": 1},
         },
@@ -260,8 +259,8 @@ def process_generic_job(self, job_id: str) -> Dict[str, Any]:
                 "$set": {
                     "status": JobStatus.COMPLETED.value,
                     "result": result,
-                    "completed_at": datetime.now(timezone.utc),
-                    "updated_at": datetime.now(timezone.utc),
+                    "completed_at": datetime.now(UTC),
+                    "updated_at": datetime.now(UTC),
                 }
             },
         )
@@ -280,7 +279,7 @@ def process_generic_job(self, job_id: str) -> Dict[str, Any]:
                     "$set": {
                         "status": JobStatus.FAILED.value,
                         "error": f"Max retries exceeded: {e}",
-                        "updated_at": datetime.now(timezone.utc),
+                        "updated_at": datetime.now(UTC),
                     }
                 },
             )

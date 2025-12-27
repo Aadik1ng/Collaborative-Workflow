@@ -1,7 +1,7 @@
 """Workspace schemas."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -11,16 +11,16 @@ class WorkspaceCreate(BaseModel):
     """Schema for creating a workspace."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=2000)
-    settings: Dict[str, Any] = Field(default_factory=dict)
+    description: str | None = Field(None, max_length=2000)
+    settings: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkspaceUpdate(BaseModel):
     """Schema for updating a workspace."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=2000)
-    settings: Optional[Dict[str, Any]] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=2000)
+    settings: dict[str, Any] | None = None
 
 
 class WorkspaceResponse(BaseModel):
@@ -28,9 +28,9 @@ class WorkspaceResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     project_id: UUID
-    settings: Dict[str, Any] = Field(default_factory=dict)
+    settings: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
 
@@ -41,7 +41,7 @@ class WorkspaceResponse(BaseModel):
 class WorkspaceListResponse(BaseModel):
     """Schema for paginated workspace list."""
 
-    items: List[WorkspaceResponse]
+    items: list[WorkspaceResponse]
     total: int
     page: int
     page_size: int
