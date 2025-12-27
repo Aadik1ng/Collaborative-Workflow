@@ -18,13 +18,13 @@ if TYPE_CHECKING:
 class Project(Base):
     """Project model for organizing workspaces."""
 
-    __tablename__ = "projects"
+    __tablename__ = "cw_projects"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     owner_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("cw_users.id", ondelete="CASCADE"), index=True, nullable=False
     )
     is_public: Mapped[bool] = mapped_column(default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

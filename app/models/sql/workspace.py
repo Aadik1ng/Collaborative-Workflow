@@ -16,13 +16,13 @@ if TYPE_CHECKING:
 class Workspace(Base):
     """Workspace model for collaborative environments."""
 
-    __tablename__ = "workspaces"
+    __tablename__ = "cw_workspaces"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     project_id: Mapped[UUID] = mapped_column(
-        ForeignKey("projects.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("cw_projects.id", ondelete="CASCADE"), index=True, nullable=False
     )
     settings: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

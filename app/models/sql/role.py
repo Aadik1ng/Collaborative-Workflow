@@ -18,20 +18,20 @@ if TYPE_CHECKING:
 class ProjectCollaborator(Base):
     """Model for managing project collaborators and their roles."""
 
-    __tablename__ = "project_collaborators"
+    __tablename__ = "cw_collaborators"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     project_id: Mapped[UUID] = mapped_column(
-        ForeignKey("projects.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("cw_projects.id", ondelete="CASCADE"), index=True, nullable=False
     )
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("cw_users.id", ondelete="CASCADE"), index=True, nullable=False
     )
     role: Mapped[str] = mapped_column(
         String(50), default=Role.VIEWER.value, nullable=False
     )
     invited_by: Mapped[Optional[UUID]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("cw_users.id", ondelete="SET NULL"), nullable=True
     )
     invited_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

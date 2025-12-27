@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class User(Base):
     """User model for authentication and identification."""
 
-    __tablename__ = "users"
+    __tablename__ = "cw_users"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(
