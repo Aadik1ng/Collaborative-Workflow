@@ -90,7 +90,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install -r requirements-dev.txt
           pip install aiosqlite  # For SQLite async testing
 
       - name: Run tests with coverage
@@ -151,4 +150,4 @@ jobs:
 
       - name: Run safety check
         run: safety check -r requirements.txt --ignore 70612
-        continue-on-error: true  # Don't fail on known issues
+        continue-on-error: true # Don't fail on known issues

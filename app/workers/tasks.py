@@ -68,7 +68,6 @@ class BaseTask(Task):
         logger.info(f"Task {task_id} completed successfully")
 
 
-
 def _execute_code_locally(
     code: str,
     language: str,
