@@ -31,8 +31,6 @@ test_session_factory = async_sessionmaker(
 )
 
 
-
-
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Create a test database session."""
