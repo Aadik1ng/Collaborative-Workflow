@@ -31,6 +31,26 @@ test_session_factory = async_sessionmaker(
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_engine():
+    """Ensure the test engine is disposed after all tests complete."""
+    yield
+    # This runs after all tests - dispose engine synchronously
+    import asyncio
+
+    async def dispose():
+        await test_engine.dispose()
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(dispose())
+        else:
+            loop.run_until_complete(dispose())
+    except RuntimeError:
+        asyncio.run(dispose())
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Create a test database session."""
